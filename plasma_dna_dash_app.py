@@ -5,9 +5,6 @@ from scipy.optimize import minimize_scalar
 
 rng = np.random.default_rng(42)
 
-# ============================================================
-# Plasma / biology models
-# ============================================================
 def P_transform(t_s, E_kVcm):
     alpha = 0.12
     return 1 - np.exp(-alpha * E_kVcm * t_s)
@@ -26,9 +23,6 @@ def eta_effective(t, E, T):
 def dna_mobility(T_C, mu0=4e-8, T_ref=25):
     return mu0 * (1 + 0.01*(T_C - T_ref))
 
-# ============================================================
-# Monte Carlo uncertainty
-# ============================================================
 def monte_carlo_eta(t, E, T, runs=150):
     ts = np.clip(rng.normal(t, 0.4, runs), 0, None)
     Es = np.clip(rng.normal(E, 0.15, runs), 0, None)
@@ -36,9 +30,6 @@ def monte_carlo_eta(t, E, T, runs=150):
     eta = eta_effective(ts, Es, Ts)
     return np.percentile(eta, [5, 50, 95])
 
-# ============================================================
-# DNA transport simulation
-# ============================================================
 def simulate_dna(E0, T_C, n_particles=80, steps=45):
     mu = dna_mobility(T_C)
     D = 1e-12 * (T_C / 25)
@@ -82,9 +73,6 @@ def simulate_dna(E0, T_C, n_particles=80, steps=45):
 
     return frames, max_r
 
-# ============================================================
-# Optimization
-# ============================================================
 def find_optimal(T):
     res = minimize_scalar(lambda t: -eta_effective(t, 3, T), bounds=(0.1, 20), method='bounded')
     best_t = res.x
@@ -92,9 +80,6 @@ def find_optimal(T):
     best_eta = eta_effective(best_t, best_E, T)
     return best_eta, best_t, best_E
 
-# ============================================================
-# Dash app
-# ============================================================
 app = Dash(__name__)
 app.title = "Helium Plasma DNA Simulator"
 
@@ -122,9 +107,6 @@ app.layout = html.Div([
     dcc.Graph(id="dna-animation")
 ])
 
-# ============================================================
-# Callbacks
-# ============================================================
 @app.callback(
     Output("time", "value"),
     Output("field", "value"),
@@ -176,9 +158,5 @@ def update(t, E, T):
     text = f"Optimal efficiency at {T}°C ≈ {best_eta:.1f}% (Time ≈ {best_t:.1f}s, Field ≈ {best_E:.2f} kV/cm)"
 
     return fig_eta, fig_dna, text
-
-# ============================================================
-# Run
-# ============================================================
 if __name__ == "__main__":
     app.run(debug=False)
